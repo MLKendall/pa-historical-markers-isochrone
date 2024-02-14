@@ -7,7 +7,6 @@
    zoom: 9, // Specify the starting zoom
  });
 
-
 // Create constants to use in getIso()
 const urlBase = 'https://api.mapbox.com/isochrone/v1/mapbox/';
 const lon = -79.9959;
@@ -26,10 +25,31 @@ async function getIso() {
 map.getSource('iso').setData(data);
 }
 
-const marker = new mapboxgl.Marker({
-  color: '#314ccd'
-});
+async function getHistoricalMarkers() {
+  const query = await fetch(
+    'https://data.pa.gov/resource/xt8f-pzzz.geojson', {method: 'GET'}
+  );
+  const markers = await query.json();
+  console.log(markers);
+  map.getSource('historical').setData(markers);
 
+  for (const marker of markers.features) {
+    // Create a DOM element for each marker.
+    const el = document.createElement('div');
+    el.className = 'marker';
+    el.style.backgroundImage = 'url(images/pa-historical-marker.png)';
+    el.style.width = `24px`;
+    el.style.height = `32px`;
+    el.style.backgroundSize = '100%';
+     
+    // Add markers to the map.
+    if(marker.geometry){
+    new mapboxgl.Marker(el)
+    .setLngLat(marker.geometry.coordinates)
+    .addTo(map);
+    }
+    }
+}
 // Create a LngLat object to use in the marker initialization
 // https://docs.mapbox.com/mapbox-gl-js/api/#lnglat
 const lngLat = {
@@ -40,6 +60,15 @@ const lngLat = {
 map.on('load', () => {
     // When the map loads, add the source and layer
     map.addSource('iso', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: []
+      }
+    });
+
+     // Add a data source containing one point feature.
+     map.addSource('historical', {
       type: 'geojson',
       data: {
         type: 'FeatureCollection',
@@ -62,12 +91,22 @@ map.on('load', () => {
       },
       'poi-label'
     );
-  
-    marker.setLngLat(lngLat).addTo(map);
+
+      // Add a layer to use the image to represent the data.
+      map.addLayer({
+        'id': 'historical',
+        'type': 'symbol',
+        'source': 'historical', // reference the data source
+        'layout': {
+      
+        }
+      }
+      );
 
 
     // Make the API call
     getIso();
+    getHistoricalMarkers();
   });
 
   // Target the "params" form in the HTML portion of your code
