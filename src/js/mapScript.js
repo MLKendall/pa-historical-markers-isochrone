@@ -25,6 +25,24 @@ async function getIso() {
 map.getSource('iso').setData(data);
 }
 
+function createPopUp(marker){
+    // Copy coordinates array.
+    const coordinates = marker.geometry.coordinates;
+    const name = marker.properties.name;
+    const description = marker.properties.markertext;
+    const county = marker.properties.county;
+    const dedicationDate = marker.properties.dedicateddate;
+
+    const popupHTML = `<h3 class="mapboxgl-popup-content--title">${name}</h3>
+    <p class="mapboxgl-popup-content--county">${county} County</p>
+    <p class="mapboxgl-popup-content--description">${description}</p>
+    <p class="mapboxgl-popup-content--dedication-date">Dedication Date: ${dedicationDate}</p>`;
+
+    const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(popupHTML);
+
+    return popup;
+}
+
 async function getHistoricalMarkers() {
   const query = await fetch(
     'https://data.pa.gov/resource/xt8f-pzzz.geojson', {method: 'GET'}
@@ -43,12 +61,16 @@ async function getHistoricalMarkers() {
     el.style.backgroundSize = '100%';
      
     // Add markers to the map.
-    if(marker.geometry){
-    new mapboxgl.Marker(el)
-    .setLngLat(marker.geometry.coordinates)
-    .addTo(map);
-    }
-    }
+    if(marker.geometry && marker.geometry.coordinates){
+
+      const markerPopup = createPopUp(marker);
+        
+      new mapboxgl.Marker(el)
+      .setLngLat(marker.geometry.coordinates)
+      .setPopup(markerPopup)
+      .addTo(map);
+      }
+  }
 }
 // Create a LngLat object to use in the marker initialization
 // https://docs.mapbox.com/mapbox-gl-js/api/#lnglat
@@ -103,11 +125,11 @@ map.on('load', () => {
       }
       );
 
-
     // Make the API call
     getIso();
     getHistoricalMarkers();
   });
+
 
   // Target the "params" form in the HTML portion of your code
 const params = document.getElementById('params');

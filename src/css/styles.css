@@ -3,9 +3,27 @@ body {
     padding: 0;
   }
 
-  #map {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 100%;
-  }
+#map {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+}
+
+.mapboxgl-popup-content {
+  padding: 1.5rem;
+}
+
+.mapboxgl-popup-content--title {
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.mapboxgl-popup-content--description{
+  margin: 1.25rem 0;
+}
+
+.mapboxgl-popup-content--county,
+.mapboxgl-popup-content--dedication-date{
+  font-weight: bold;
+}
