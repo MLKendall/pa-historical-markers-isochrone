@@ -3,14 +3,16 @@
  const map = new mapboxgl.Map({
    container: 'map', // Specify the container ID
    style: 'mapbox://styles/mapbox/streets-v12', // Specify which map style to use
-   center: [-79.9959, 40.4406], // Specify the starting position
+   center: [-77.8599, 40.7982], // Specify the starting position
    zoom: 9, // Specify the starting zoom
  });
 
 // Create constants to use in getIso()
 const urlBase = 'https://api.mapbox.com/isochrone/v1/mapbox/';
-const lon = -79.9959;
-const lat = 40.4406;
+// let lon = -79.9959;
+// let lat = 40.4406;
+let lon = -77.8599;
+let lat = 40.7982;
 let profile = 'driving'; // Set the default routing profile
 let minutes = 60; // Set the default duration
 
@@ -114,16 +116,34 @@ map.on('load', () => {
       'poi-label'
     );
 
-      // Add a layer to use the image to represent the data.
-      map.addLayer({
-        'id': 'historical',
-        'type': 'symbol',
-        'source': 'historical', // reference the data source
-        'layout': {
-      
-        }
-      }
-      );
+    // Add a layer to use the image to represent the data.
+    map.addLayer({
+      'id': 'historical',
+      'type': 'symbol',
+      'source': 'historical', // reference the data source
+      'layout': {}
+    });
+
+    //Add geolocation
+    const geolocate = new mapboxgl.GeolocateControl({
+      positionOptions: {
+      enableHighAccuracy: true
+      },
+      // When active the map will receive updates to the device's location as it changes.
+      trackUserLocation: true,
+      // Draw an arrow next to the location dot to indicate which direction the device is heading.
+      showUserHeading: true
+    })
+    map.addControl(geolocate);
+
+    geolocate.on('geolocate', function(e) {
+      console.log(e);
+      lon = e.coords.longitude;
+      lat = e.coords.latitude
+      const position = [lon, lat];
+      getIso();
+    });
+
 
     // Make the API call
     getIso();
