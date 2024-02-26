@@ -136,14 +136,45 @@ map.on('load', () => {
     })
     map.addControl(geolocate);
 
+    const geocoder = new MapboxGeocoder({
+      accessToken: mapboxgl.accessToken,
+      mapboxgl: mapboxgl,
+      autocomplete: false,
+      flyTo: {
+        padding: 15, // If you want some minimum space around your result
+        easing: function(t) {
+          return t;
+        },
+        maxZoom: 6, // If you want your result not to go further than a specific zoom
+      }
+    });
+    geocoder.addTo('#geocoder');
+
+
     geolocate.on('geolocate', function(e) {
-      console.log(e);
       lon = e.coords.longitude;
       lat = e.coords.latitude
       const position = [lon, lat];
       getIso();
     });
 
+    geocoder.on('result', function(result) {
+      lon = result.result.geometry.coordinates[0],
+      lat = result.result.geometry.coordinates[1],
+      getIso()
+      //Manually center map on search coordinates since this does not happen automatically when the Geocoder is not added directly as a map control.
+      map.flyTo({
+        center: result.result.geometry.coordinates,
+        essential: true, // this animation is considered essential with respect to prefers-reduced-motion
+        zoom: 9,
+        speed: 1,
+        curve: 1.42,
+        easing(t) {
+          return t;
+        }
+      });
+     
+    });
 
     // Make the API call
     getIso();
