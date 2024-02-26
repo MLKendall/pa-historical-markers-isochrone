@@ -1,5 +1,9 @@
  // Add your Mapbox access token
  mapboxgl.accessToken = 'pk.eyJ1IjoibWtlbmRhbGw5MyIsImEiOiJjajh1ZnBza3gweWx0MndwNnhqdm4xNWxqIn0.rMuyyrv9yUHGnE0PiXzGLw';
+
+let lon = -77.8599;
+let lat = 40.7982;
+
  const map = new mapboxgl.Map({
    container: 'map', // Specify the container ID
    style: 'mapbox://styles/mapbox/streets-v12', // Specify which map style to use
@@ -7,14 +11,21 @@
    zoom: 9, // Specify the starting zoom
  });
 
+ let centerMarker = new mapboxgl.Marker()
+        .setLngLat([lon, lat])
+        .addTo(map);
+
 // Create constants to use in getIso()
 const urlBase = 'https://api.mapbox.com/isochrone/v1/mapbox/';
-// let lon = -79.9959;
-// let lat = 40.4406;
-let lon = -77.8599;
-let lat = 40.7982;
 let profile = 'driving'; // Set the default routing profile
 let minutes = 60; // Set the default duration
+
+function resetMarker() {
+  centerMarker.remove();
+  centerMarker = new mapboxgl.Marker()
+  .setLngLat([lon, lat])
+  .addTo(map);
+}
 
 // Create a function that sets up the Isochrone API query then makes an fetch call
 async function getIso() {
@@ -156,12 +167,13 @@ map.on('load', () => {
       lat = e.coords.latitude
       const position = [lon, lat];
       getIso();
+      resetMarker();
     });
 
     geocoder.on('result', function(result) {
       lon = result.result.geometry.coordinates[0],
       lat = result.result.geometry.coordinates[1],
-      getIso()
+      getIso();
       //Manually center map on search coordinates since this does not happen automatically when the Geocoder is not added directly as a map control.
       map.flyTo({
         center: result.result.geometry.coordinates,
@@ -173,6 +185,7 @@ map.on('load', () => {
           return t;
         }
       });
+      resetMarker()
      
     });
 
