@@ -27,3 +27,9 @@ body {
 .mapboxgl-popup-content--dedication-date{
   font-weight: bold;
 }
+
+.mapboxgl-popup-close-button {
+  padding: 0.5rem;
+  font-size: 1.5rem;
+  line-height: 0.7;
+}
