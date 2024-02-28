@@ -3,6 +3,8 @@
 
 let lon = -77.8599;
 let lat = 40.7982;
+let isochrone = [];
+let currentMarkers = [];
 
  const map = new mapboxgl.Map({
    container: 'map', // Specify the container ID
@@ -11,7 +13,7 @@ let lat = 40.7982;
    zoom: 9, // Specify the starting zoom
  });
 
- let centerMarker = new mapboxgl.Marker()
+ let locationMarker = new mapboxgl.Marker()
         .setLngLat([lon, lat])
         .addTo(map);
 
@@ -20,9 +22,10 @@ const urlBase = 'https://api.mapbox.com/isochrone/v1/mapbox/';
 let profile = 'driving'; // Set the default routing profile
 let minutes = 60; // Set the default duration
 
-function resetMarker() {
-  centerMarker.remove();
-  centerMarker = new mapboxgl.Marker()
+// Remove old location marker and create new one
+function resetLocationMarker() {
+  locationMarker.remove();
+  locationMarker = new mapboxgl.Marker()
   .setLngLat([lon, lat])
   .addTo(map);
 }
@@ -36,11 +39,12 @@ async function getIso() {
   const data = await query.json();
   // Set the 'iso' source's data to what's returned by the API query
 map.getSource('iso').setData(data);
+isochrone = data.features[0].geometry.coordinates;
+getHistoricalMarkers();
 }
 
 function createPopUp(marker){
     // Copy coordinates array.
-    const coordinates = marker.geometry.coordinates;
     const name = marker.properties.name;
     const description = marker.properties.markertext;
     const county = marker.properties.county;
@@ -57,32 +61,41 @@ function createPopUp(marker){
 }
 
 async function getHistoricalMarkers() {
+  for (const marker of currentMarkers){
+    marker.remove();
+  }
+
+  // Get historical marker data from PA Open Source Data
   const query = await fetch(
     'https://data.pa.gov/resource/xt8f-pzzz.geojson', {method: 'GET'}
   );
   const markers = await query.json();
-  console.log(markers);
   map.getSource('historical').setData(markers);
 
   for (const marker of markers.features) {
-    // Create a DOM element for each marker.
-    const el = document.createElement('div');
-    el.className = 'marker';
-    el.style.backgroundImage = 'url(images/pa-historical-marker.png)';
-    el.style.width = `24px`;
-    el.style.height = `32px`;
-    el.style.backgroundSize = '100%';
-     
-    // Add markers to the map.
     if(marker.geometry && marker.geometry.coordinates){
+      markerCoordinates =marker.geometry.coordinates;
+      if (turf.booleanPointInPolygon( turf.point(markerCoordinates), turf.polygon(isochrone))){
 
-      const markerPopup = createPopUp(marker);
+        // Create a DOM element for each marker.
+        const el = document.createElement('div');
+        el.className = 'marker';
+        el.style.backgroundImage = 'url(images/pa-historical-marker.png)';
+        el.style.width = `24px`;
+        el.style.height = `32px`;
+        el.style.backgroundSize = '100%';
+
+        const markerPopup = createPopUp(marker);
         
-      new mapboxgl.Marker(el)
-      .setLngLat(marker.geometry.coordinates)
-      .setPopup(markerPopup)
-      .addTo(map);
-      }
+        // Add markers to the map.
+        const newMarker = new mapboxgl.Marker(el)
+          .setLngLat(marker.geometry.coordinates)
+          .setPopup(markerPopup)
+          .addTo(map);
+
+        currentMarkers.push(newMarker);
+        }  
+    }
   }
 }
 // Create a LngLat object to use in the marker initialization
@@ -102,7 +115,7 @@ map.on('load', () => {
       }
     });
 
-     // Add a data source containing one point feature.
+     // Add a data source containing historical markers.
      map.addSource('historical', {
       type: 'geojson',
       data: {
@@ -127,7 +140,7 @@ map.on('load', () => {
       'poi-label'
     );
 
-    // Add a layer to use the image to represent the data.
+    // Add a layer to use the image to represent the historical markers.
     map.addLayer({
       'id': 'historical',
       'type': 'symbol',
@@ -165,9 +178,8 @@ map.on('load', () => {
     geolocate.on('geolocate', function(e) {
       lon = e.coords.longitude;
       lat = e.coords.latitude
-      const position = [lon, lat];
       getIso();
-      resetMarker();
+      resetLocationMarker();
     });
 
     geocoder.on('result', function(result) {
@@ -185,13 +197,11 @@ map.on('load', () => {
           return t;
         }
       });
-      resetMarker()
-     
+      resetLocationMarker()
     });
 
     // Make the API call
     getIso();
-    getHistoricalMarkers();
   });
 
 
